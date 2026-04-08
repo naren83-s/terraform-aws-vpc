@@ -28,3 +28,79 @@ resource "aws_subnet" "public" {
     var.public_subnet_tags
   )
 }
+
+resource "aws_subnet" "private" {
+  count = length(var.private_subnet_cidrs)
+  vpc_id     = aws_vpc.main.id
+  cidr_block = var.private_subnet_cidrs[count.index]
+  availability_zone = local.az_names[count.index]
+
+  tags = merge(
+    local.common_tags,
+    {
+        Name = "${var.project}-${var.environment}-private-${local.az_names[count.index] }"
+    },
+    var.public_subnet_tags
+  )
+}
+
+resource "aws_subnet" "database" {
+  count = length(var.database_subnet_cidrs)
+  vpc_id     = aws_vpc.main.id
+  cidr_block = var.database_subnet_cidrs[count.index]
+  availability_zone = local.az_names[count.index]
+
+  tags = merge(
+    local.common_tags,
+    {
+        Name = "${var.project}-${var.environment}-database-${local.az_names[count.index] }"
+    },
+    var.database_subnet_tags
+  )
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  /* route {
+    cidr_block = "10.0.1.0/24"
+    gateway_id = aws_internet_gateway.example.id
+  }
+
+  route {
+    ipv6_cidr_block        = "::/0"
+    egress_only_gateway_id = aws_egress_only_internet_gateway.example.id
+  } */
+
+  tags = merge(
+    local.common_tags,
+    {
+        Name = "${var.project}-${var.environment}-public"
+    },
+    var.public_route_tags
+  )
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(
+    local.common_tags,
+    {
+        Name = "${var.project}-${var.environment}-private"
+    },
+    var.private_route_tags
+  )
+}
+
+resource "aws_route_table" "database" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(
+    local.common_tags,
+    {
+        Name = "${var.project}-${var.environment}-database"
+    },
+    var.database_route_tags
+  )
+}
